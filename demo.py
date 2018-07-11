@@ -15,23 +15,33 @@ if not(os.path.isfile("nvidia_monday")):
     f.close()
     print("finished downloading")
 
+x = Image.open("target.png")
 
-network.model.load_weights("nvidia_monday")
+#Cut off alpha channel
+z = np.array([np.array(x)[:,:,:3]])
 
+network.set_patch_size_to_fit(z)
+
+model = network.nvidia_unet()
+
+model.load_weights("nvidia_monday")
 
 while True:
     x = Image.open("target.png")
 
     #Cut off alpha channel
     z = np.array([np.array(x)[:,:,:3]])
-    
     #Assume Green Pixels are the mask
     mask = 1 - np.repeat(np.expand_dims(np.all(z == np.array([[[[0, 255, 0]]]]), axis=-1), axis=-1), axis=-1, repeats=3)
+    
+    network_input, network_mask = network.pad_to_patch_size(z, mask)
+    o = model.predict([network_input / 256., network_mask])
+    #cut off padding
+    o = o[:, :z.shape[1], :z.shape[2]]
 
 
-    o = network.model.predict([z / 256., mask])
 
-    cv2.imshow("Processed Image", cv2.resize(o[0][:,:,[2, 1, 0]], (512, 512)))
 
+    cv2.imshow("Processed Image", o[0][:,:,[2, 1, 0]])
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
