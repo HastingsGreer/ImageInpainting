@@ -93,3 +93,26 @@ def nvidia_unet():
             output = BatchNormalization()(output)
     assert len(skips) == 0
     return Model([input_, input_mask], [output])
+
+
+def pad_to_patch_size(image, mask):
+    #Network only accepts square images with size as a multiple of 256.
+    #Use the mask to make sure that the output only depends on the valid rectangle.
+    network_input = np.zeros((1, patch_size, patch_size, 3))
+    network_mask = np.zeros((1, patch_size, patch_size, 3))
+
+    network_input[:, :image.shape[1], :image.shape[2]] = image
+    network_mask[:, :mask.shape[1], :mask.shape[2]] = mask
+
+    return network_input, network_mask
+
+def set_patch_size_to_fit(z):
+    num_patches = (max(z.shape[1], z.shape[2]) - 1) // 256 + 1
+
+    #Sorry that this is global. I promise to fix soon (maybe)
+    global patch_size
+    patch_size = 256 * num_patches
+
+    
+
+#model = nvidia_unet()
