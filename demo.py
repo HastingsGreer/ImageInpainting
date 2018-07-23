@@ -5,12 +5,12 @@ import cv2
 import numpy as np
 
 
-if not(os.path.isfile("nvidia_monday")):
+if not(os.path.isfile("no_scaling_fix_overnight")):
     import urllib.request
     print("Downloading weights, could take up to 5 minutes (400 MB)") 
-    response = urllib.request.urlopen("https://data.kitware.com/api/v1/item/5b43b8528d777f2e622599eb/download")
+    response = urllib.request.urlopen("https://data.kitware.com/api/v1/item/5b55f4948d777f06857bfd21/download")
     content = response.read()
-    f = open("nvidia_monday", "wb")
+    f = open("no_scaling_fix_overnight", "wb")
     f.write(content)
     f.close()
     print("finished downloading")
@@ -24,7 +24,7 @@ network.set_patch_size_to_fit(z)
 
 model = network.nvidia_unet()
 
-model.load_weights("nvidia_monday")
+model.load_weights("no_scaling_fix_overnight")
 
 while True:
     x = Image.open("target.png")

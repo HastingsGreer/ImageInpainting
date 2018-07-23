@@ -44,7 +44,7 @@ model = network.nvidia_unet()
 loss = []
 try:
 
-    model.load_weights("scaling_fix_overnight")
+    model.load_weights("no_scaling_fix_overnight")
 except:
     pass
 import scipy.misc
@@ -98,14 +98,15 @@ layers_loss_model = Model(lossModel.inputs, [lossModel.layers[idx].output for id
 
 lossModel.layers[1].output
 
-validation_perceptual_Is = layers_loss_model.predict(test_Is * 256 - 127) + [test_Is]
+#validation_perceptual_Is = layers_loss_model.predict(test_Is * 256 - 127) + [test_Is]
+validation_perceptual_Is = layers_loss_model.predict(test_Is) + [test_Is]
 
-loss_model_outputs = Lambda(lambda x: x * 256 - 127)(model.output)
-loss_model_outputs = layers_loss_model(loss_model_outputs)
+#loss_model_outputs = Lambda(lambda x: x * 256 - 127)(model.output)
+loss_model_outputs = layers_loss_model(model.output)
 
 full_model = Model(model.input, loss_model_outputs + model.outputs)
 
-full_model.compile(keras.optimizers.Adam(), ['mean_absolute_error'] * 7, loss_weights=[.05, .05, .05, 10, 10, 10, 9])
+full_model.compile(keras.optimizers.Adam(), ['mean_absolute_error'] * 7, loss_weights=[.05, .05, .05, 120, 120, 120, 9])
 
 import sys
 import gc
@@ -144,8 +145,8 @@ def train():
     sample = Is
     print("init")
     try:
-        perceptual_Is = layers_loss_model.predict(sample * 256 - 127) + [sample]
-
+        perceptual_Is = layers_loss_model.predict(sample) + [sample]
+        #perceptual_Is = layers_loss_model.predict(sample * 256 - 127) + [sample]
 
         loss.append(full_model.fit([sample, mask], perceptual_Is, epochs=1, 
                                    batch_size=8, 
@@ -162,7 +163,9 @@ def train():
     sample = Is
     print("init")
     try:
-        perceptual_Is = layers_loss_model.predict(sample * 256 - 127) + [sample]
+        
+        perceptual_Is = layers_loss_model.predict(sample) + [sample]
+        #perceptual_Is = layers_loss_model.predict(sample * 256 - 127) + [sample]
 
 
         loss.append(full_model.fit([sample, mask], perceptual_Is, epochs=1, 
@@ -177,10 +180,11 @@ def train():
         del perceptual_Is
         gc.collect()
         print("del end")
+        model.save("no_scaling_fix_overnight")
 import gc
 perceptual_Is = []
 for _ in range(30):
     train()
 
-model.save("scaling_fix_overnight")
+model.save("no_scaling_fix_overnight")
 
