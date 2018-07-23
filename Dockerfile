@@ -4,6 +4,6 @@ RUN pip install click keras pillow tensorflow
 
 COPY docker.py /docker.py
 COPY network.py /network.py
-COPY nvidia_monday /nvidia_monday
+COPY no_scaling_fix_overnight /no_scaling_fix_overnight
 
 ENTRYPOINT ["python", "/docker.py"]
