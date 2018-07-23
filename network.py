@@ -1,33 +1,22 @@
 import numpy as np
-
 import keras
 
-from keras.datasets import mnist
 from keras.layers import Input, Dense, Reshape, Flatten, Dropout, multiply, GaussianNoise
 from keras.layers import BatchNormalization, Activation, Embedding, ZeroPadding2D
 from keras.layers import MaxPooling2D, Lambda
-from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D, Conv2DTranspose, Cropping2D
 from keras.models import Sequential, Model
-from keras.optimizers import Adam
-from keras import losses
 from keras.layers import MaxPooling2D, concatenate, Add
-from keras.utils import to_categorical
 import keras.backend as K
 
 category = True
 
 
 import keras.utils
-#patch_size=128
 patch_size = 256
 from keras.engine.topology import Layer
 class Bias(Layer):
-    def __init__(self, name=""):
-        super().__init__()
-        
     def build(self, input_shape):
-        channel_axis = -1
         self.bias = self.add_weight(shape=(input_shape[-1],),
                                         initializer="zeros",
                                         name='bias',
@@ -43,7 +32,8 @@ class Bias(Layer):
     
     def compute_output_shape(self, input_shape):
         return input_shape
-    
+
+
 keras.layers.Bias = Bias
 
 def partial_convolution(input_, mask, filters, shape, stride, activation):
@@ -61,7 +51,7 @@ def partial_convolution(input_, mask, filters, shape, stride, activation):
     
     new_mask = Lambda(lambda x: K.clip(x, 0, 1))(mask_sum)
     
-    output = convolution_layer(keras.layers.multiply([mask , input_]))
+    output = convolution_layer(keras.layers.multiply([mask, input_]))
     
     inv_sum = Lambda(lambda x: filters * shape[0] * shape[1] / (.0001 + x))(mask_sum) 
     
@@ -73,10 +63,6 @@ def partial_convolution(input_, mask, filters, shape, stride, activation):
     
     return output, new_mask
 
-def full_convolution(input_, mask, filters, shape, stride, activation):
-    output = Conv2D(filters, shape, strides=stride, padding="same")(input_)
-    output = activation(output)
-    return output, "string"
 
 def nvidia_unet():
     input_ = Input((patch_size, patch_size, 3))
@@ -87,25 +73,24 @@ def nvidia_unet():
     for shape, filters in zip([7, 5, 5, 3, 3, 3, 3, 3], [64, 128, 256, 512, 512, 512, 512, 512]):
         skips.append((output, mask))
         print(output.shape)
-        output, mask = partial_convolution(output, mask, filters, (shape, shape), 2, 
-                                          Activation("relu"))
+        output, mask = partial_convolution(output, mask, filters, (shape, shape), 2,
+                                           Activation("relu"))
         if shape != 7:
             output = BatchNormalization()(output)
-    for shape, filters in zip([4, 4, 4, 4, 4, 4, 4, 4], [ 512, 512, 512, 512, 256, 128, 64, 3]):
+    for shape, filters in zip([4, 4, 4, 4, 4, 4, 4, 4], [512, 512, 512, 512, 256, 128, 64, 3]):
         output = keras.layers.UpSampling2D()(output)
         mask = keras.layers.UpSampling2D()(mask)
         skip_output, skip_mask = skips.pop()
         output = concatenate([output, skip_output], axis=3)
         mask = concatenate([mask, skip_mask], axis=3)
         
-        if filters!= 3:
+        if filters != 3:
             activation = keras.layers.LeakyReLU(.2)
         else:
             activation = Activation("linear")
-        output, mask = partial_convolution(output, mask, filters, (shape, shape), 1, 
-                                          activation)
-        if filters!= 3:
-             output = BatchNormalization()(output)
+        output, mask = partial_convolution(output, mask, filters, (shape, shape), 1, activation)
+        if filters != 3:
+            output = BatchNormalization()(output)
     assert len(skips) == 0
     return Model([input_, input_mask], [output])
 
