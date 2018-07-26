@@ -9,11 +9,8 @@ from keras.models import Sequential, Model
 from keras.layers import MaxPooling2D, concatenate, Add
 import keras.backend as K
 
-category = True
-
 
 import keras.utils
-patch_size = 256
 from keras.engine.topology import Layer
 class Bias(Layer):
     def build(self, input_shape):
@@ -64,7 +61,7 @@ def partial_convolution(input_, mask, filters, shape, stride, activation):
     return output, new_mask
 
 
-def nvidia_unet():
+def nvidia_unet(patch_size=256):
     input_ = Input((patch_size, patch_size, 3))
     input_mask = Input((patch_size, patch_size, 3))
     skips = []
@@ -95,7 +92,7 @@ def nvidia_unet():
     return Model([input_, input_mask], [output])
 
 
-def pad_to_patch_size(image, mask):
+def pad_to_patch_size(image, mask, patch_size=256):
     #Network only accepts square images with size as a multiple of 256.
     #Use the mask to make sure that the output only depends on the valid rectangle.
     network_input = np.zeros((1, patch_size, patch_size, 3))
@@ -106,13 +103,7 @@ def pad_to_patch_size(image, mask):
 
     return network_input, network_mask
 
-def set_patch_size_to_fit(z):
+
+def compute_patch_size_to_fit(z):
     num_patches = (max(z.shape[1], z.shape[2]) - 1) // 256 + 1
-
-    #Sorry that this is global. I promise to fix soon (maybe)
-    global patch_size
-    patch_size = 256 * num_patches
-
-    
-
-#model = nvidia_unet()
+    return 256 * num_patches

@@ -20,9 +20,9 @@ x = Image.open("target.png")
 #Cut off alpha channel
 z = np.array([np.array(x)[:,:,:3]])
 
-network.set_patch_size_to_fit(z)
+patch_size = network.compute_patch_size_to_fit(z)
 
-model = network.nvidia_unet()
+model = network.nvidia_unet(patch_size)
 
 model.load_weights("no_scaling_fix_overnight")
 
@@ -33,14 +33,11 @@ while True:
     z = np.array([np.array(x)[:,:,:3]])
     #Assume Green Pixels are the mask
     mask = 1 - np.repeat(np.expand_dims(np.all(z == np.array([[[[0, 255, 0]]]]), axis=-1), axis=-1), axis=-1, repeats=3)
-    
-    network_input, network_mask = network.pad_to_patch_size(z, mask)
+
+    network_input, network_mask = network.pad_to_patch_size(z, mask, patch_size)
     o = model.predict([network_input / 256., network_mask])
     #cut off padding
     o = o[:, :z.shape[1], :z.shape[2]]
-
-
-
 
     cv2.imshow("Processed Image", o[0][:,:,[2, 1, 0]])
     if cv2.waitKey(1) & 0xFF == ord('q'):
