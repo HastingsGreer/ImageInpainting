@@ -21,3 +21,13 @@ Draw on image in bright green (0, 255, 0).
 
 Save image to run inpainting algorithm
 
+# Docker Workflow (CPU only):
+
+Run `demo.py` once to download network weights.
+
+Build dockerfile with command `sudo docker build -t inpainting .`
+
+Process an image with command 
+
+`sudo docker run -v ~/full_path_to_image_dir/:/img/ inpainting /img/target.png /img/out.png`
+
